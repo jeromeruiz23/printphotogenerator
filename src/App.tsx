@@ -436,45 +436,53 @@ function App() {
     };
   };
 
-  const LayoutTypeSelector = () => (
-    <div className="mb-4">
-      <label
-        className={`block text-sm font-medium mb-2 ${
-          darkMode ? "text-gray-200" : "text-gray-700"
-        }`}
-      >
-        Layout Type
-      </label>
-      <div className="flex gap-2">
-        <button
-          onClick={() => setLayoutType("grid")}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md ${
-            layoutType === "grid"
-              ? "bg-indigo-600 text-white"
-              : darkMode
-              ? "bg-gray-700 text-gray-200"
-              : "bg-gray-100 text-gray-700"
+  const LayoutTypeSelector = React.memo(() => {
+    const handleGridClick = useCallback(() => setLayoutType("grid"), []);
+    const handlePhotoboothClick = useCallback(
+      () => setLayoutType("photobooth"),
+      []
+    );
+
+    return (
+      <div className="mb-4">
+        <label
+          className={`block text-sm font-medium mb-2 ${
+            darkMode ? "text-gray-200" : "text-gray-700"
           }`}
         >
-          <Grid size={16} />
-          Grid
-        </button>
-        <button
-          onClick={() => setLayoutType("photobooth")}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md ${
-            layoutType === "photobooth"
-              ? "bg-indigo-600 text-white"
-              : darkMode
-              ? "bg-gray-700 text-gray-200"
-              : "bg-gray-100 text-gray-700"
-          }`}
-        >
-          <LayoutIcon size={16} />
-          Photo Booth
-        </button>
+          Layout Type
+        </label>
+        <div className="flex gap-2">
+          <button
+            onClick={handleGridClick}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md ${
+              layoutType === "grid"
+                ? "bg-indigo-600 text-white"
+                : darkMode
+                ? "bg-gray-700 text-gray-200"
+                : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            <Grid size={16} />
+            Grid
+          </button>
+          <button
+            onClick={handlePhotoboothClick}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md ${
+              layoutType === "photobooth"
+                ? "bg-indigo-600 text-white"
+                : darkMode
+                ? "bg-gray-700 text-gray-200"
+                : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            <LayoutIcon size={16} />
+            Photo Booth
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  });
 
   const PhotoboothTemplateSelector = () => (
     <div className="mb-4">
