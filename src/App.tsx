@@ -10,8 +10,17 @@ import {
   Sun,
   Moon,
   X,
+  Grid,
+  Layout as LayoutIcon,
 } from "lucide-react";
-import type { PhotoSize, PaperSize, Layout, CropArea } from "./types";
+import type {
+  PhotoSize,
+  PaperSize,
+  Layout,
+  CropArea,
+  LayoutType,
+  PhotoboothTemplate,
+} from "./types";
 import { defaultPaperSizes, defaultPhotoSizes } from "./constants/common";
 import {
   DragDropContext,
@@ -23,6 +32,9 @@ import {
 function App() {
   const [photoSizes, setPhotoSizes] = useState<PhotoSize[]>(defaultPhotoSizes);
   const [paperSizes, setPaperSizes] = useState<PaperSize[]>(defaultPaperSizes);
+  const [layoutType, setLayoutType] = useState<LayoutType>("grid");
+  const [photoboothTemplate, setPhotoboothTemplate] =
+    useState<PhotoboothTemplate>("classic");
   const [selectedPhotoSize, setSelectedPhotoSize] = useState<PhotoSize>(
     photoSizes[0]
   );
@@ -36,6 +48,9 @@ function App() {
   const [customPhotoHeight, setCustomPhotoHeight] = useState("");
   const imageRef = useRef<HTMLImageElement>(null);
   const [previewZoom, setPreviewZoom] = useState<number>(1);
+  const [previewBackground, setPreviewBackground] = useState<"white" | "black">(
+    "white"
+  );
 
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   const [isDraggingImage, setIsDraggingImage] = useState(false);
@@ -359,29 +374,177 @@ function App() {
       </div>
     );
   };
-  // Update the calculateLayout function
+
   const calculateLayout = (): Layout => {
-    const padding = 2; // 2mm padding between photos
+    const defaultPadding = 2; // Default padding for grid layout
+    const photoboothPadding = 10; // Larger padding for photobooth layout
     const paperMargin = 10; // 10mm margin around paper edges
 
     // Calculate printable area with margins
     const printableWidth = selectedPaperSize.width - 2 * paperMargin;
     const printableHeight = selectedPaperSize.height - 2 * paperMargin;
 
-    // Calculate number of photos that can fit considering padding
+    if (layoutType === "photobooth") {
+      const padding = photoboothPadding; // Use larger padding for photobooth
+      switch (photoboothTemplate) {
+        case "classic":
+          return {
+            photosPerRow: 2,
+            rows: 2,
+            total: 4,
+            type: "photobooth",
+            template: "classic",
+            padding: padding,
+          };
+        case "strips":
+          return {
+            photosPerRow: 1,
+            rows: 4,
+            total: 4,
+            type: "photobooth",
+            template: "strips",
+            padding: padding,
+          };
+        case "collage":
+          return {
+            photosPerRow: 3,
+            rows: 2,
+            total: 6,
+            type: "photobooth",
+            template: "collage",
+            padding: padding,
+          };
+      }
+    }
+
+    // Default grid layout
     const photosPerRow = Math.floor(
-      (printableWidth + padding) / (selectedPhotoSize.width + padding)
+      (printableWidth + defaultPadding) /
+        (selectedPhotoSize.width + defaultPadding)
     );
     const rows = Math.floor(
-      (printableHeight + padding) / (selectedPhotoSize.height + padding)
+      (printableHeight + defaultPadding) /
+        (selectedPhotoSize.height + defaultPadding)
     );
 
     return {
       photosPerRow,
       rows,
       total: photosPerRow * rows,
+      type: "grid",
+      padding: defaultPadding,
     };
   };
+
+  const LayoutTypeSelector = () => (
+    <div className="mb-4">
+      <label
+        className={`block text-sm font-medium mb-2 ${
+          darkMode ? "text-gray-200" : "text-gray-700"
+        }`}
+      >
+        Layout Type
+      </label>
+      <div className="flex gap-2">
+        <button
+          onClick={() => setLayoutType("grid")}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md ${
+            layoutType === "grid"
+              ? "bg-indigo-600 text-white"
+              : darkMode
+              ? "bg-gray-700 text-gray-200"
+              : "bg-gray-100 text-gray-700"
+          }`}
+        >
+          <Grid size={16} />
+          Grid
+        </button>
+        <button
+          onClick={() => setLayoutType("photobooth")}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md ${
+            layoutType === "photobooth"
+              ? "bg-indigo-600 text-white"
+              : darkMode
+              ? "bg-gray-700 text-gray-200"
+              : "bg-gray-100 text-gray-700"
+          }`}
+        >
+          <LayoutIcon size={16} />
+          Photo Booth
+        </button>
+      </div>
+    </div>
+  );
+
+  const PhotoboothTemplateSelector = () => (
+    <div className="mb-4">
+      <label
+        className={`block text-sm font-medium mb-2 ${
+          darkMode ? "text-gray-200" : "text-gray-700"
+        }`}
+      >
+        Photobooth Template
+      </label>
+      <div className="grid grid-cols-3 gap-2">
+        <button
+          onClick={() => setPhotoboothTemplate("classic")}
+          className={`flex flex-col items-center p-3 rounded-md ${
+            photoboothTemplate === "classic"
+              ? "bg-indigo-600 text-white"
+              : darkMode
+              ? "bg-gray-700 text-gray-200"
+              : "bg-gray-100 text-gray-700"
+          }`}
+        >
+          <div className="grid grid-cols-2 gap-1 mb-2">
+            <div className="w-6 h-6 bg-current opacity-20 rounded"></div>
+            <div className="w-6 h-6 bg-current opacity-20 rounded"></div>
+            <div className="w-6 h-6 bg-current opacity-20 rounded"></div>
+            <div className="w-6 h-6 bg-current opacity-20 rounded"></div>
+          </div>
+          Classic
+        </button>
+        <button
+          onClick={() => setPhotoboothTemplate("strips")}
+          className={`flex flex-col items-center p-3 rounded-md ${
+            photoboothTemplate === "strips"
+              ? "bg-indigo-600 text-white"
+              : darkMode
+              ? "bg-gray-700 text-gray-200"
+              : "bg-gray-100 text-gray-700"
+          }`}
+        >
+          <div className="flex flex-col gap-1 mb-2">
+            <div className="w-4 h-6 bg-current opacity-20 rounded"></div>
+            <div className="w-4 h-6 bg-current opacity-20 rounded"></div>
+            <div className="w-4 h-6 bg-current opacity-20 rounded"></div>
+            <div className="w-4 h-6 bg-current opacity-20 rounded"></div>
+          </div>
+          Strips
+        </button>
+        <button
+          onClick={() => setPhotoboothTemplate("collage")}
+          className={`flex flex-col items-center p-3 rounded-md ${
+            photoboothTemplate === "collage"
+              ? "bg-indigo-600 text-white"
+              : darkMode
+              ? "bg-gray-700 text-gray-200"
+              : "bg-gray-100 text-gray-700"
+          }`}
+        >
+          <div className="grid grid-cols-3 gap-1 mb-2">
+            <div className="w-4 h-4 bg-current opacity-20 rounded"></div>
+            <div className="w-4 h-4 bg-current opacity-20 rounded"></div>
+            <div className="w-4 h-4 bg-current opacity-20 rounded"></div>
+            <div className="w-4 h-4 bg-current opacity-20 rounded"></div>
+            <div className="w-4 h-4 bg-current opacity-20 rounded"></div>
+            <div className="w-4 h-4 bg-current opacity-20 rounded"></div>
+          </div>
+          Collage
+        </button>
+      </div>
+    </div>
+  );
 
   const addCustomPhotoSize = () => {
     const width = parseFloat(customPhotoWidth);
@@ -434,11 +597,12 @@ function App() {
       setCropArea({ x, y, width: cropWidth, height: cropHeight });
     }
   }, [selectedImageId, selectedPhotoSize]);
+
   const generatePDF = async () => {
     if (images.length === 0) return;
 
     const layout = calculateLayout();
-    const padding = 2;
+    const padding = layout.padding;
     const paperMargin = 10;
 
     const doc = new jsPDF({
@@ -449,6 +613,12 @@ function App() {
       unit: "mm",
       format: [selectedPaperSize.width, selectedPaperSize.height],
     });
+
+    // Set background color for the whole page
+    if (previewBackground === "black") {
+      doc.setFillColor(0, 0, 0);
+      doc.rect(0, 0, selectedPaperSize.width, selectedPaperSize.height, "F");
+    }
 
     // Calculate centering margins for the page
     const totalWidthWithPadding =
@@ -465,9 +635,11 @@ function App() {
     // Process photos for the page
     for (let row = 0; row < layout.rows; row++) {
       for (let col = 0; col < layout.photosPerRow; col++) {
-        // Use modulo to cycle through available images
         const currentImage =
-          images[(row * layout.photosPerRow + col) % images.length];
+          layout.type === "photobooth"
+            ? images[0]
+            : images[(row * layout.photosPerRow + col) % images.length];
+
         const x = marginX + col * (selectedPhotoSize.width + padding);
         const y = marginY + row * (selectedPhotoSize.height + padding);
 
@@ -538,52 +710,74 @@ function App() {
           "FAST"
         );
 
-        // Add dashed border
-        const dashLength = 2;
-        const gapLength = 2;
+        // Set border color based on background
+        doc.setDrawColor(previewBackground === "black" ? 255 : 0);
 
-        // Draw dashed borders
-        for (
-          let i = 0;
-          i < selectedPhotoSize.width;
-          i += dashLength + gapLength
-        ) {
+        if (layout.type === "photobooth") {
+          // Draw solid borders for photobooth layout
+          doc.line(x, y, x + selectedPhotoSize.width, y); // top
           doc.line(
-            x + i,
-            y,
-            x + Math.min(i + dashLength, selectedPhotoSize.width),
-            y
-          );
-          doc.line(
-            x + i,
+            x,
             y + selectedPhotoSize.height,
-            x + Math.min(i + dashLength, selectedPhotoSize.width),
+            x + selectedPhotoSize.width,
             y + selectedPhotoSize.height
-          );
-        }
+          ); // bottom
+          doc.line(x, y, x, y + selectedPhotoSize.height); // left
+          doc.line(
+            x + selectedPhotoSize.width,
+            y,
+            x + selectedPhotoSize.width,
+            y + selectedPhotoSize.height
+          ); // right
+        } else {
+          // Draw dashed borders for grid layout
+          const dashLength = 2;
+          const gapLength = 2;
 
-        for (
-          let i = 0;
-          i < selectedPhotoSize.height;
-          i += dashLength + gapLength
-        ) {
-          doc.line(
-            x,
-            y + i,
-            x,
-            y + Math.min(i + dashLength, selectedPhotoSize.height)
-          );
-          doc.line(
-            x + selectedPhotoSize.width,
-            y + i,
-            x + selectedPhotoSize.width,
-            y + Math.min(i + dashLength, selectedPhotoSize.height)
-          );
+          for (
+            let i = 0;
+            i < selectedPhotoSize.width;
+            i += dashLength + gapLength
+          ) {
+            doc.line(
+              x + i,
+              y,
+              x + Math.min(i + dashLength, selectedPhotoSize.width),
+              y
+            );
+            doc.line(
+              x + i,
+              y + selectedPhotoSize.height,
+              x + Math.min(i + dashLength, selectedPhotoSize.width),
+              y + selectedPhotoSize.height
+            );
+          }
+
+          for (
+            let i = 0;
+            i < selectedPhotoSize.height;
+            i += dashLength + gapLength
+          ) {
+            doc.line(
+              x,
+              y + i,
+              x,
+              y + Math.min(i + dashLength, selectedPhotoSize.height)
+            );
+            doc.line(
+              x + selectedPhotoSize.width,
+              y + i,
+              x + selectedPhotoSize.width,
+              y + Math.min(i + dashLength, selectedPhotoSize.height)
+            );
+          }
         }
       }
     }
 
-    doc.save("photo-layout.pdf");
+    doc.save(
+      layout.type === "photobooth" ? "photobooth.pdf" : "photo-layout.pdf"
+    );
   };
 
   const layout = calculateLayout();
@@ -720,7 +914,7 @@ function App() {
                     Use mouse wheel to zoom in/out
                   </div>
 
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-6">
                     <div>
                       <label
                         className={`block text-sm font-medium ${
@@ -906,120 +1100,151 @@ function App() {
         </div>
         {selectedImageId && (
           <>
-            <div className="bg-white shadow rounded-lg p-6 mb-6">
-              <div
-                className={`mt-6 p-4 rounded-md ${
-                  darkMode ? "bg-gray-700" : "bg-gray-50"
-                } transition-colors duration-200`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Printer
-                      className={`h-5 w-5 mr-2 ${
-                        darkMode ? "text-gray-400" : "text-gray-500"
-                      }`}
-                    />
-                    <span
-                      className={`text-sm ${
-                        darkMode ? "text-gray-300" : "text-gray-600"
+            <div
+              className={`${
+                darkMode ? "bg-gray-800" : "bg-white"
+              } shadow-lg rounded-lg p-6 mb-6 transition-colors duration-200`}
+            >
+              <LayoutTypeSelector />
+              {layoutType === "photobooth" && <PhotoboothTemplateSelector />}
+              <div className="mt-6">
+                {/* Preview Card */}
+                <div
+                  className={`p-4 rounded-md ${
+                    darkMode ? "bg-gray-700" : "bg-gray-50"
+                  } transition-colors duration-200`}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <Printer
+                        className={`h-5 w-5 mr-2 ${
+                          darkMode ? "text-gray-400" : "text-gray-500"
+                        }`}
+                      />
+                      <span
+                        className={`text-sm ${
+                          darkMode ? "text-gray-300" : "text-gray-600"
+                        }`}
+                      >
+                        Layout Preview:
+                      </span>
+                    </div>
+                    <button
+                      onClick={() =>
+                        setPreviewBackground((prev) =>
+                          prev === "white" ? "black" : "white"
+                        )
+                      }
+                      className={`px-3 py-1 rounded-md text-sm ${
+                        darkMode
+                          ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                          : "bg-gray-100 hover:bg-gray-200 text-gray-700"
                       }`}
                     >
-                      Layout Preview:
-                    </span>
+                      Background:{" "}
+                      {previewBackground === "white" ? "White" : "Black"}
+                    </button>
                   </div>
-                  <span
-                    className={`text-sm font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}
-                  >
-                    {layout.total} photos ({layout.photosPerRow} × {layout.rows}
-                    )
-                  </span>
-                </div>
 
-                <div className="mt-4 bg-white border rounded-lg overflow-hidden">
-                  <div
-                    className="relative bg-gray-100"
-                    style={{
-                      width: "100%",
-                      paddingTop: `${
-                        (selectedPaperSize.height / selectedPaperSize.width) *
-                        100
-                      }%`,
-                    }}
-                  >
-                    {/* Paper preview container */}
-                    <div className="absolute inset-0 m-4 bg-white shadow-inner">
-                      {/* Generate preview boxes for each photo position */}
-                      {Array.from({ length: layout.rows }).map((_, row) =>
-                        Array.from({ length: layout.photosPerRow }).map(
-                          (_, col) => {
-                            const imageIndex = row * layout.photosPerRow + col;
-                            const image = images[imageIndex % images.length]; // Cycle through images
+                  <div className="mt-4 bg-white border rounded-lg overflow-hidden">
+                    <div
+                      className="relative bg-gray-100"
+                      style={{
+                        width: "100%",
+                        paddingTop: `${
+                          (selectedPaperSize.height / selectedPaperSize.width) *
+                          100
+                        }%`,
+                      }}
+                    >
+                      {/* Paper preview container */}
+                      <div
+                        className={`absolute inset-0 m-4 ${
+                          previewBackground === "black"
+                            ? "bg-black"
+                            : "bg-white"
+                        } shadow-inner`}
+                      >
+                        {/* Generate preview boxes for each photo position */}
+                        {Array.from({ length: layout.rows }).map((_, row) =>
+                          Array.from({ length: layout.photosPerRow }).map(
+                            (_, col) => {
+                              const imageIndex =
+                                row * layout.photosPerRow + col;
+                              const image = images[imageIndex % images.length];
 
-                            // Calculate position percentages
-                            const padding = 2;
-                            const totalWidth = selectedPaperSize.width;
-                            const totalHeight = selectedPaperSize.height;
+                              const padding = layout.padding;
+                              const totalWidth = selectedPaperSize.width;
+                              const totalHeight = selectedPaperSize.height;
 
-                            const photoWidth =
-                              (selectedPhotoSize.width / totalWidth) * 100;
-                            const photoHeight =
-                              (selectedPhotoSize.height / totalHeight) * 100;
-                            const spacingX = (padding / totalWidth) * 100;
-                            const spacingY = (padding / totalHeight) * 100;
+                              const photoWidth =
+                                (selectedPhotoSize.width / totalWidth) * 100;
+                              const photoHeight =
+                                (selectedPhotoSize.height / totalHeight) * 100;
+                              const spacingX = (padding / totalWidth) * 100;
+                              const spacingY = (padding / totalHeight) * 100;
 
-                            const totalWidthWithPadding =
-                              layout.photosPerRow * photoWidth +
-                              (layout.photosPerRow - 1) * spacingX;
-                            const totalHeightWithPadding =
-                              layout.rows * photoHeight +
-                              (layout.rows - 1) * spacingY;
+                              const totalWidthWithPadding =
+                                layout.photosPerRow * photoWidth +
+                                (layout.photosPerRow - 1) * spacingX;
+                              const totalHeightWithPadding =
+                                layout.rows * photoHeight +
+                                (layout.rows - 1) * spacingY;
 
-                            const marginX =
-                              ((totalWidth -
-                                (totalWidthWithPadding * totalWidth) / 100) /
-                                2 /
-                                totalWidth) *
-                              100;
-                            const marginY =
-                              ((totalHeight -
-                                (totalHeightWithPadding * totalHeight) / 100) /
-                                2 /
-                                totalHeight) *
-                              100;
+                              const marginX =
+                                ((totalWidth -
+                                  (totalWidthWithPadding * totalWidth) / 100) /
+                                  2 /
+                                  totalWidth) *
+                                100;
+                              const marginY =
+                                ((totalHeight -
+                                  (totalHeightWithPadding * totalHeight) /
+                                    100) /
+                                  2 /
+                                  totalHeight) *
+                                100;
 
-                            const left =
-                              marginX + col * (photoWidth + spacingX);
-                            const top =
-                              marginY + row * (photoHeight + spacingY);
+                              const left =
+                                marginX + col * (photoWidth + spacingX);
+                              const top =
+                                marginY + row * (photoHeight + spacingY);
 
-                            return (
-                              <div
-                                key={`${row}-${col}`}
-                                className="absolute border-2 border-dashed border-gray-300 overflow-hidden"
-                                style={{
-                                  left: `${left}%`,
-                                  top: `${top}%`,
-                                  width: `${photoWidth}%`,
-                                  height: `${photoHeight}%`,
-                                }}
-                              >
-                                {image && (
-                                  <div
-                                    className="w-full h-full bg-contain bg-center bg-no-repeat"
-                                    style={{
-                                      backgroundImage: `url(${image.dataUrl})`,
-                                      backgroundSize: "cover",
-                                      opacity: 0.7,
-                                    }}
-                                  />
-                                )}
-                              </div>
-                            );
-                          }
-                        )
-                      )}
+                              return (
+                                <div
+                                  key={`${row}-${col}`}
+                                  className={`absolute ${
+                                    layoutType === "photobooth"
+                                      ? "border border-solid"
+                                      : "border-2 border-dashed"
+                                  } ${
+                                    darkMode
+                                      ? "border-gray-600"
+                                      : "border-gray-300"
+                                  } overflow-hidden`}
+                                  style={{
+                                    left: `${left}%`,
+                                    top: `${top}%`,
+                                    width: `${photoWidth}%`,
+                                    height: `${photoHeight}%`,
+                                  }}
+                                >
+                                  {image && (
+                                    <div
+                                      className="w-full h-full bg-contain bg-center bg-no-repeat"
+                                      style={{
+                                        backgroundImage: `url(${image.dataUrl})`,
+                                        backgroundSize: "cover",
+                                        opacity: 0.7,
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                              );
+                            }
+                          )
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
