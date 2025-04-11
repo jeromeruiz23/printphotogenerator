@@ -35,6 +35,8 @@ function App() {
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   const [isDraggingImage, setIsDraggingImage] = useState(false);
   const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
+  const [customPaperWidth, setCustomPaperWidth] = useState("");
+  const [customPaperHeight, setCustomPaperHeight] = useState("");
 
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== "undefined") {
@@ -90,6 +92,24 @@ function App() {
         x: Math.min(Math.max(newX, minX), maxX),
         y: Math.min(Math.max(newY, minY), maxY),
       });
+    }
+  };
+
+  const addCustomPaperSize = () => {
+    const width = parseFloat(customPaperWidth);
+    const height = parseFloat(customPaperHeight);
+    if (width > 0 && height > 0) {
+      const newSize: PaperSize = {
+        width,
+        height,
+        label: `Custom ${width}×${height}mm`,
+        isCustom: true,
+      };
+      setPaperSizes([...paperSizes, newSize]);
+      setSelectedPaperSize(newSize);
+      setShowCustomPaperForm(false);
+      setCustomPaperWidth("");
+      setCustomPaperHeight("");
     }
   };
 
@@ -590,6 +610,52 @@ function App() {
                       <Plus className="h-5 w-5" />
                     </button>
                   </div>
+                  {showCustomPaperForm && (
+                    <div className="mt-2 p-4 border rounded-md">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700">
+                            Width (mm)
+                          </label>
+                          <input
+                            type="number"
+                            value={customPaperWidth}
+                            onChange={(e) =>
+                              setCustomPaperWidth(e.target.value)
+                            }
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700">
+                            Height (mm)
+                          </label>
+                          <input
+                            type="number"
+                            value={customPaperHeight}
+                            onChange={(e) =>
+                              setCustomPaperHeight(e.target.value)
+                            }
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-2 flex justify-end gap-2">
+                        <button
+                          onClick={() => setShowCustomPaperForm(false)}
+                          className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={addCustomPaperSize}
+                          className="px-2 py-1 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
