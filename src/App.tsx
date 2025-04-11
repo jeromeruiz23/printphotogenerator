@@ -9,9 +9,16 @@ import {
   Crop,
   Sun,
   Moon,
+  X,
 } from "lucide-react";
 import type { PhotoSize, PaperSize, Layout, CropArea } from "./types";
 import { defaultPaperSizes, defaultPhotoSizes } from "./constants/common";
+import {
+  DragDropContext,
+  Draggable,
+  Droppable,
+  DropResult,
+} from "react-beautiful-dnd";
 
 function App() {
   const [photoSizes, setPhotoSizes] = useState<PhotoSize[]>(defaultPhotoSizes);
@@ -181,18 +188,55 @@ function App() {
       setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1));
     };
 
+    const handleDragEnd = (result: DropResult) => {
+      if (!result.destination) return;
+
+      const newImages = Array.from(images);
+      const [reorderedItem] = newImages.splice(result.source.index, 1);
+      newImages.splice(result.destination.index, 0, reorderedItem);
+
+      setImages(newImages);
+    };
+
+    const handleRemoveImage = (imageId: string) => {
+      const newImages = images.filter((img) => img.id !== imageId);
+      setImages(newImages);
+
+      // Clear states if no images remain
+      if (newImages.length === 0) {
+        setSelectedImageId(null);
+        setCropArea(null);
+        setPreviewZoom(1);
+        setImagePosition({ x: 0, y: 0 });
+        setIsDraggingImage(false);
+        setDragStartPos({ x: 0, y: 0 });
+      } else if (selectedImageId === imageId) {
+        // If the removed image was selected, select the first remaining image
+        setSelectedImageId(newImages[0].id);
+      }
+    };
+    useEffect(() => {
+      if (images.length === 0) {
+        setSelectedImageId(null);
+        setCropArea(null);
+        setPreviewZoom(1);
+        setImagePosition({ x: 0, y: 0 });
+        setIsDraggingImage(false);
+        setDragStartPos({ x: 0, y: 0 });
+      }
+    });
+
     return (
       <div className="relative flex items-center justify-center mb-4">
         {images.length > imagesPerPage && (
           <button
             onClick={handlePrevPage}
+            className={`absolute left-0 p-2 rounded-full ${
+              darkMode
+                ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                : "bg-white hover:bg-gray-100 text-gray-600"
+            } shadow-md transition-colors duration-200`}
             disabled={currentPage === 0}
-            className={`absolute left-0 z-10 p-2 rounded-full shadow-lg transition-colors duration-200
-              ${
-                darkMode
-                  ? "bg-gray-800 hover:bg-gray-700 text-gray-200"
-                  : "bg-white hover:bg-gray-100 text-gray-600"
-              } ${currentPage === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             <svg
               className="w-5 h-5"
@@ -210,43 +254,92 @@ function App() {
           </button>
         )}
 
-        <div className="flex gap-2 justify-center items-center mx-16 p-2">
-          {currentImages.map((image) => (
-            <button
-              key={image.id}
-              onClick={() => setSelectedImageId(image.id)}
-              className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 
-                ${
-                  image.id === selectedImageId
-                    ? "border-indigo-500"
-                    : darkMode
-                    ? "border-gray-600"
-                    : "border-gray-200"
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="imageList" direction="horizontal">
+            {(provided, snapshot) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                className={`flex gap-2 justify-center items-center mx-16 p-2 rounded-lg transition-colors duration-200 ${
+                  snapshot.isDraggingOver
+                    ? darkMode
+                      ? "bg-gray-700"
+                      : "bg-gray-100"
+                    : "bg-transparent"
                 }`}
-            >
-              <img
-                src={image.dataUrl}
-                alt="Thumbnail"
-                className="w-full h-full object-cover"
-              />
-            </button>
-          ))}
-        </div>
+              >
+                {currentImages.map((image, index) => (
+                  <Draggable
+                    key={image.id}
+                    draggableId={image.id}
+                    index={index}
+                  >
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className={`relative group transition-transform ${
+                          snapshot.isDragging ? "scale-105" : ""
+                        }`}
+                      >
+                        <img
+                          src={image.dataUrl}
+                          alt={`Image ${index + 1}`}
+                          className={`w-20 h-20 object-cover rounded-lg cursor-move
+                            ${
+                              selectedImageId === image.id
+                                ? "ring-2 ring-blue-500"
+                                : ""
+                            }
+                            ${
+                              snapshot.isDragging ? "opacity-75 shadow-lg" : ""
+                            }`}
+                          onClick={() => setSelectedImageId(image.id)}
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation(); // Stop event propagation
+                            handleRemoveImage(image.id);
+                          }}
+                          className={`absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center rounded-full 
+    ${
+      darkMode ? "bg-gray-700 hover:bg-gray-600" : "bg-white hover:bg-gray-100"
+    } 
+    shadow-md
+    opacity-0 group-hover:opacity-100 transition-opacity duration-200
+    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500
+    pointer-events-auto`} // Add pointer-events-auto
+                          aria-label="Remove image"
+                        >
+                          <X
+                            className={`w-3 h-3 ${
+                              darkMode ? "text-white" : "text-gray-900"
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
 
         {images.length > imagesPerPage && (
           <button
             onClick={handleNextPage}
-            disabled={currentPage >= totalPages - 1}
-            className={`absolute right-0 z-10 p-2 rounded-full shadow-lg transition-colors duration-200
-              ${
-                darkMode
-                  ? "bg-gray-800 hover:bg-gray-700 text-gray-200"
-                  : "bg-white hover:bg-gray-100 text-gray-600"
-              } ${
-              currentPage >= totalPages - 1
-                ? "opacity-50 cursor-not-allowed"
-                : ""
-            }`}
+            className={`absolute right-0 p-2 rounded-full ${
+              darkMode
+                ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                : "bg-white hover:bg-gray-100 text-gray-600"
+            } shadow-md transition-colors duration-200`}
+            disabled={
+              currentPage >= Math.ceil(images.length / imagesPerPage) - 1
+            }
           >
             <svg
               className="w-5 h-5"
