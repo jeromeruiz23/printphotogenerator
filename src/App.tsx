@@ -164,32 +164,108 @@ function App() {
   });
 
   const ImageSelector = () => {
+    const [currentPage, setCurrentPage] = useState(0);
+    const imagesPerPage = 6;
+    const totalPages = Math.ceil(images.length / imagesPerPage);
+
+    const currentImages = images.slice(
+      currentPage * imagesPerPage,
+      (currentPage + 1) * imagesPerPage
+    );
+
+    const handlePrevPage = () => {
+      setCurrentPage((prev) => Math.max(0, prev - 1));
+    };
+
+    const handleNextPage = () => {
+      setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1));
+    };
+
     return (
-      <div className="flex gap-2 overflow-x-auto p-2 mb-4">
-        {images.map((image) => (
+      <div className="relative flex items-center justify-center mb-4">
+        {images.length > imagesPerPage && (
           <button
-            key={image.id}
-            onClick={() => setSelectedImageId(image.id)}
-            className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 
+            onClick={handlePrevPage}
+            disabled={currentPage === 0}
+            className={`absolute left-0 z-10 p-2 rounded-full shadow-lg transition-colors duration-200
               ${
-                image.id === selectedImageId
-                  ? "border-indigo-500"
-                  : darkMode
-                  ? "border-gray-600"
-                  : "border-gray-200"
-              }`}
+                darkMode
+                  ? "bg-gray-800 hover:bg-gray-700 text-gray-200"
+                  : "bg-white hover:bg-gray-100 text-gray-600"
+              } ${currentPage === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            <img
-              src={image.dataUrl}
-              alt="Thumbnail"
-              className="w-full h-full object-cover"
-            />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
           </button>
-        ))}
+        )}
+
+        <div className="flex gap-2 justify-center items-center mx-16 p-2">
+          {currentImages.map((image) => (
+            <button
+              key={image.id}
+              onClick={() => setSelectedImageId(image.id)}
+              className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 
+                ${
+                  image.id === selectedImageId
+                    ? "border-indigo-500"
+                    : darkMode
+                    ? "border-gray-600"
+                    : "border-gray-200"
+                }`}
+            >
+              <img
+                src={image.dataUrl}
+                alt="Thumbnail"
+                className="w-full h-full object-cover"
+              />
+            </button>
+          ))}
+        </div>
+
+        {images.length > imagesPerPage && (
+          <button
+            onClick={handleNextPage}
+            disabled={currentPage >= totalPages - 1}
+            className={`absolute right-0 z-10 p-2 rounded-full shadow-lg transition-colors duration-200
+              ${
+                darkMode
+                  ? "bg-gray-800 hover:bg-gray-700 text-gray-200"
+                  : "bg-white hover:bg-gray-100 text-gray-600"
+              } ${
+              currentPage >= totalPages - 1
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+            }`}
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+        )}
       </div>
     );
   };
-
   // Update the calculateLayout function
   const calculateLayout = (): Layout => {
     const padding = 2; // 2mm padding between photos
