@@ -42,6 +42,8 @@ function App() {
     setSelectedPaperSize,
     addCustomPhotoSize,
     addCustomPaperSize,
+    deleteCustomPhotoSize,
+    deleteCustomPaperSize,
   } = useSizes();
   const {
     layoutType,
@@ -193,6 +195,7 @@ function App() {
                             selectedSize={selectedPhotoSize}
                             onSizeSelect={setSelectedPhotoSize}
                             onCustomSizeAdd={addCustomPhotoSize}
+                            onCustomSizeDelete={deleteCustomPhotoSize}
                             darkMode={darkMode}
                           />
 
@@ -202,6 +205,7 @@ function App() {
                             selectedSize={selectedPaperSize}
                             onSizeSelect={setSelectedPaperSize}
                             onCustomSizeAdd={addCustomPaperSize}
+                            onCustomSizeDelete={deleteCustomPaperSize}
                             darkMode={darkMode}
                           />
 

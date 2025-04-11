@@ -17,7 +17,7 @@ export const useSizes = () => {
       const newSize: PhotoSize = {
         width,
         height,
-        label: `Custom ${width}×${height}mm`,
+        label: `Custom ${width}×${height}`,
         isCustom: true,
       };
       setPhotoSizes((prev) => [...prev, newSize]);
@@ -32,7 +32,7 @@ export const useSizes = () => {
       const newSize: PaperSize = {
         width,
         height,
-        label: `Custom ${width}×${height}mm`,
+        label: `Custom ${width}×${height}`,
         isCustom: true,
       };
       setPaperSizes((prev) => [...prev, newSize]);
@@ -41,6 +41,30 @@ export const useSizes = () => {
     }
     return false;
   }, []);
+
+  const deleteCustomPhotoSize = useCallback(
+    (size: PhotoSize) => {
+      if (size.isCustom) {
+        setPhotoSizes((prev) => prev.filter((s) => s.label !== size.label));
+        if (selectedPhotoSize.label === size.label) {
+          setSelectedPhotoSize(photoSizes[0]);
+        }
+      }
+    },
+    [photoSizes, selectedPhotoSize.label]
+  );
+
+  const deleteCustomPaperSize = useCallback(
+    (size: PaperSize) => {
+      if (size.isCustom) {
+        setPaperSizes((prev) => prev.filter((s) => s.label !== size.label));
+        if (selectedPaperSize.label === size.label) {
+          setSelectedPaperSize(paperSizes[0]);
+        }
+      }
+    },
+    [paperSizes, selectedPaperSize.label]
+  );
 
   return {
     photoSizes,
@@ -51,5 +75,7 @@ export const useSizes = () => {
     setSelectedPaperSize,
     addCustomPhotoSize,
     addCustomPaperSize,
+    deleteCustomPhotoSize,
+    deleteCustomPaperSize,
   };
 };

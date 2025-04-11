@@ -29,11 +29,6 @@ export const ImageSelector: React.FC<ImageSelectorProps> = ({
   const imagesPerPage = 6;
   const totalPages = Math.ceil(images.length / imagesPerPage);
 
-  const currentImages = images.slice(
-    currentPage * imagesPerPage,
-    (currentPage + 1) * imagesPerPage
-  );
-
   const handlePrevPage = () => {
     setCurrentPage((prev) => Math.max(0, prev - 1));
   };
@@ -45,12 +40,27 @@ export const ImageSelector: React.FC<ImageSelectorProps> = ({
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
+    const sourceIndex = result.source.index + currentPage * imagesPerPage;
+    const destinationIndex = result.destination.index + currentPage * imagesPerPage;
+
     const newImages = Array.from(images);
-    const [reorderedItem] = newImages.splice(result.source.index, 1);
-    newImages.splice(result.destination.index, 0, reorderedItem);
+    const [reorderedItem] = newImages.splice(sourceIndex, 1);
+    newImages.splice(destinationIndex, 0, reorderedItem);
 
     onImagesReorder(newImages);
+
+    // Adjust current page if the drag would move item out of view
+    const newItemPage = Math.floor(destinationIndex / imagesPerPage);
+    if (newItemPage !== currentPage) {
+      setCurrentPage(newItemPage);
+    }
   };
+
+  // Get images for current page
+  const currentImages = images.slice(
+    currentPage * imagesPerPage,
+    (currentPage + 1) * imagesPerPage
+  );
 
   return (
     <div className="relative flex items-center justify-center mb-6">
@@ -88,7 +98,7 @@ export const ImageSelector: React.FC<ImageSelectorProps> = ({
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className={`flex gap-3 justify-center items-center mx-20 py-4 px-6 rounded-xl transition-all duration-200 ${
+              className={`flex gap-3 justify-center items-center mx-20 py-4 px-6 rounded-xl transition-all duration-200 min-h-[120px] ${
                 snapshot.isDraggingOver
                   ? darkMode
                     ? "bg-gray-800/80 shadow-lg"
@@ -97,14 +107,18 @@ export const ImageSelector: React.FC<ImageSelectorProps> = ({
               }`}
             >
               {currentImages.map((image, index) => (
-                <Draggable key={image.id} draggableId={image.id} index={index}>
+                <Draggable 
+                  key={image.id} 
+                  draggableId={image.id} 
+                  index={index}
+                >
                   {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef}
                       {...provided.draggableProps}
                       {...provided.dragHandleProps}
-                      className={`relative group transition-all duration-200 ${
-                        snapshot.isDragging ? "scale-105 rotate-2" : ""
+                      className={`relative group touch-none ${
+                        snapshot.isDragging ? "z-50" : ""
                       }`}
                     >
                       <div className={`relative rounded-lg overflow-hidden shadow-md transition-all duration-200 ${
@@ -163,9 +177,9 @@ export const ImageSelector: React.FC<ImageSelectorProps> = ({
               ? "bg-gray-800 hover:bg-gray-700 text-white"
               : "bg-white hover:bg-gray-100 text-black"
           } shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed ${
-            currentPage >= Math.ceil(images.length / imagesPerPage) - 1 ? "invisible" : ""
+            currentPage >= totalPages - 1 ? "invisible" : ""
           } hover:scale-110 active:scale-95`}
-          disabled={currentPage >= Math.ceil(images.length / imagesPerPage) - 1}
+          disabled={currentPage >= totalPages - 1}
         >
           <svg
             className="w-5 h-5"
