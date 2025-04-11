@@ -796,8 +796,8 @@ function App() {
         darkMode ? "bg-gray-900" : "bg-gray-50"
       } py-12 px-4 sm:px-6 lg:px-8`}
     >
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center flex-1">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center flex-1 mb-8">
           <h1
             className={`text-3xl font-bold ${
               darkMode ? "text-white" : "text-gray-900"
@@ -809,6 +809,472 @@ function App() {
             Upload a photo, choose sizes, and generate a printable PDF
           </p>
         </div>
+
+        <div
+          className={`${
+            images.length > 0 ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : ""
+          }`}
+        >
+          {/* Left column - Upload and Image Controls */}
+          <div
+            className={`${
+              darkMode ? "bg-gray-800" : "bg-white"
+            } shadow-lg rounded-lg p-6 mb-6 transition-colors duration-200`}
+          >
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed ${
+                darkMode
+                  ? "border-gray-600 hover:border-gray-500"
+                  : "border-gray-300 hover:border-gray-400"
+              } rounded-lg p-6 text-center cursor-pointer transition-colors duration-200`}
+            >
+              <input {...getInputProps()} />
+              <ImagePlus
+                className={`mx-auto h-12 w-12 ${
+                  darkMode ? "text-gray-500" : "text-gray-400"
+                }`}
+              />
+              <p
+                className={`mt-2 text-sm ${
+                  darkMode ? "text-gray-300" : "text-gray-600"
+                }`}
+              >
+                {isDragActive
+                  ? "Drop the photo here..."
+                  : "Drag & drop a photo here, or click to select"}
+              </p>
+            </div>
+            {images.length > 0 && (
+              <div className="mt-4">
+                <ImageSelector />
+                {selectedImageId && (
+                  <div className="relative" onWheel={handleWheelZoom}>
+                    <div
+                      className="overflow-hidden relative"
+                      style={{ height: "12rem" }}
+                      onMouseDown={handleMouseDown}
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                    >
+                      <img
+                        ref={imageRef}
+                        src={
+                          images.find((img) => img.id === selectedImageId)
+                            ?.dataUrl
+                        }
+                        alt="Preview"
+                        className="max-h-none mx-auto object-contain transition-transform"
+                        style={{
+                          transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${previewZoom})`,
+                          transformOrigin: "center",
+                          cursor: isDraggingImage ? "grabbing" : "grab",
+                        }}
+                        draggable={false}
+                      />
+                      {cropArea && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div
+                            className="absolute border-2 border-indigo-500"
+                            style={{
+                              left: `${
+                                (cropArea.x / imageRef.current!.naturalWidth) *
+                                100
+                              }%`,
+                              top: `${
+                                (cropArea.y / imageRef.current!.naturalHeight) *
+                                100
+                              }%`,
+                              width: `${
+                                (cropArea.width /
+                                  imageRef.current!.naturalWidth) *
+                                100
+                              }%`,
+                              height: `${
+                                (cropArea.height /
+                                  imageRef.current!.naturalHeight) *
+                                100
+                              }%`,
+                              boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.5)",
+                              zIndex: 10,
+                              border: "2px dashed #6366f1",
+                            }}
+                          >
+                            <div className="absolute -top-4 -right-4 bg-indigo-500 rounded-full p-1">
+                              <Crop className="text-white" size={14} />
+                            </div>
+                            <div className="absolute inset-0 border-2 border-white border-dashed opacity-50" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="my-2 text-sm text-gray-500 text-center">
+                      Use mouse wheel to zoom in/out
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-6">
+                      <div>
+                        <label
+                          className={`block text-sm font-medium ${
+                            darkMode ? "text-gray-200" : "text-gray-700"
+                          }`}
+                        >
+                          Photo Size
+                        </label>
+                        <div className="mt-1 flex gap-2">
+                          <select
+                            className={`block w-full rounded-md shadow-sm focus:ring-indigo-500 ${
+                              darkMode
+                                ? "bg-gray-700 border-gray-600 text-white"
+                                : "bg-white border-gray-300 text-gray-900"
+                            } focus:border-indigo-500 transition-colors duration-200`}
+                            value={selectedPhotoSize.label}
+                            onChange={(e) =>
+                              setSelectedPhotoSize(
+                                photoSizes.find(
+                                  (size) => size.label === e.target.value
+                                ) || photoSizes[0]
+                              )
+                            }
+                          >
+                            {photoSizes.map((size) => (
+                              <option key={size.label} value={size.label}>
+                                {size.label}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => setShowCustomPhotoForm(true)}
+                            className={`px-3 py-2 border rounded-md shadow-sm text-sm font-medium ${
+                              darkMode
+                                ? "border-gray-600 bg-gray-700 text-gray-200 hover:bg-gray-600"
+                                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200`}
+                          >
+                            <Plus className="h-5 w-5" />
+                          </button>
+                        </div>
+                        {showCustomPhotoForm && (
+                          <div className="mt-2 p-4 border rounded-md">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700">
+                                  Width (mm)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={customPhotoWidth}
+                                  onChange={(e) =>
+                                    setCustomPhotoWidth(e.target.value)
+                                  }
+                                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700">
+                                  Height (mm)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={customPhotoHeight}
+                                  onChange={(e) =>
+                                    setCustomPhotoHeight(e.target.value)
+                                  }
+                                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                />
+                              </div>
+                            </div>
+                            <div className="mt-2 flex justify-end gap-2">
+                              <button
+                                onClick={() => setShowCustomPhotoForm(false)}
+                                className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={addCustomPhotoSize}
+                                className="px-2 py-1 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700"
+                              >
+                                Add
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <label
+                          className={`block text-sm font-medium ${
+                            darkMode ? "text-gray-200" : "text-gray-700"
+                          }`}
+                        >
+                          Paper Size
+                        </label>
+                        <div className="mt-1 flex gap-2">
+                          <select
+                            className={`block w-full rounded-md shadow-sm focus:ring-indigo-500 ${
+                              darkMode
+                                ? "bg-gray-700 border-gray-600 text-white"
+                                : "bg-white border-gray-300 text-gray-900"
+                            } focus:border-indigo-500 transition-colors duration-200`}
+                            value={selectedPaperSize.label}
+                            onChange={(e) =>
+                              setSelectedPaperSize(
+                                paperSizes.find(
+                                  (size) => size.label === e.target.value
+                                ) || paperSizes[0]
+                              )
+                            }
+                          >
+                            {paperSizes.map((size) => (
+                              <option key={size.label} value={size.label}>
+                                {size.label}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => setShowCustomPaperForm(true)}
+                            className={`px-3 py-2 border rounded-md shadow-sm text-sm font-medium ${
+                              darkMode
+                                ? "border-gray-600 bg-gray-700 text-gray-200 hover:bg-gray-600"
+                                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200`}
+                          >
+                            <Plus className="h-5 w-5" />
+                          </button>
+                        </div>
+                        {showCustomPaperForm && (
+                          <div className="mt-2 p-4 border rounded-md">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700">
+                                  Width (mm)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={customPaperWidth}
+                                  onChange={(e) =>
+                                    setCustomPaperWidth(e.target.value)
+                                  }
+                                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700">
+                                  Height (mm)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={customPaperHeight}
+                                  onChange={(e) =>
+                                    setCustomPaperHeight(e.target.value)
+                                  }
+                                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                />
+                              </div>
+                            </div>
+                            <div className="mt-2 flex justify-end gap-2">
+                              <button
+                                onClick={() => setShowCustomPaperForm(false)}
+                                className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={addCustomPaperSize}
+                                className="px-2 py-1 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700"
+                              >
+                                Add
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <LayoutTypeSelector />
+                      {layoutType === "photobooth" && (
+                        <PhotoboothTemplateSelector />
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Right column - Preview and Settings */}
+          {selectedImageId && (
+            <div>
+              <div
+                className={`${
+                  darkMode ? "bg-gray-800" : "bg-white"
+                } shadow-lg rounded-lg p-6 mb-6 transition-colors duration-200`}
+              >
+                <div className="mt-6">
+                  {/* Preview Card */}
+                  <div
+                    className={`p-4 rounded-md ${
+                      darkMode ? "bg-gray-700" : "bg-gray-50"
+                    } transition-colors duration-200`}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center">
+                        <Printer
+                          className={`h-5 w-5 mr-2 ${
+                            darkMode ? "text-gray-400" : "text-gray-500"
+                          }`}
+                        />
+                        <span
+                          className={`text-sm ${
+                            darkMode ? "text-gray-300" : "text-gray-600"
+                          }`}
+                        >
+                          Layout Preview:
+                        </span>
+                      </div>
+                      <button
+                        onClick={() =>
+                          setPreviewBackground((prev) =>
+                            prev === "white" ? "black" : "white"
+                          )
+                        }
+                        className={`px-3 py-1 rounded-md text-sm ${
+                          darkMode
+                            ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                            : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                        }`}
+                      >
+                        Background:{" "}
+                        {previewBackground === "white" ? "White" : "Black"}
+                      </button>
+                    </div>
+
+                    <div className="mt-4 bg-white border rounded-lg overflow-hidden">
+                      <div
+                        className="relative bg-gray-100"
+                        style={{
+                          width: "100%",
+                          paddingTop: `${
+                            (selectedPaperSize.height /
+                              selectedPaperSize.width) *
+                            100
+                          }%`,
+                        }}
+                      >
+                        {/* Paper preview container */}
+                        <div
+                          className={`absolute inset-0 m-4 ${
+                            previewBackground === "black"
+                              ? "bg-black"
+                              : "bg-white"
+                          } shadow-inner`}
+                        >
+                          {/* Generate preview boxes for each photo position */}
+                          {Array.from({ length: layout.rows }).map((_, row) =>
+                            Array.from({ length: layout.photosPerRow }).map(
+                              (_, col) => {
+                                const imageIndex =
+                                  row * layout.photosPerRow + col;
+                                const image =
+                                  images[imageIndex % images.length];
+
+                                const padding = layout.padding;
+                                const totalWidth = selectedPaperSize.width;
+                                const totalHeight = selectedPaperSize.height;
+
+                                const photoWidth =
+                                  (selectedPhotoSize.width / totalWidth) * 100;
+                                const photoHeight =
+                                  (selectedPhotoSize.height / totalHeight) *
+                                  100;
+                                const spacingX = (padding / totalWidth) * 100;
+                                const spacingY = (padding / totalHeight) * 100;
+
+                                const totalWidthWithPadding =
+                                  layout.photosPerRow * photoWidth +
+                                  (layout.photosPerRow - 1) * spacingX;
+                                const totalHeightWithPadding =
+                                  layout.rows * photoHeight +
+                                  (layout.rows - 1) * spacingY;
+
+                                const marginX =
+                                  ((totalWidth -
+                                    (totalWidthWithPadding * totalWidth) /
+                                      100) /
+                                    2 /
+                                    totalWidth) *
+                                  100;
+                                const marginY =
+                                  ((totalHeight -
+                                    (totalHeightWithPadding * totalHeight) /
+                                      100) /
+                                    2 /
+                                    totalHeight) *
+                                  100;
+
+                                const left =
+                                  marginX + col * (photoWidth + spacingX);
+                                const top =
+                                  marginY + row * (photoHeight + spacingY);
+
+                                return (
+                                  <div
+                                    key={`${row}-${col}`}
+                                    className={`absolute ${
+                                      layoutType === "photobooth"
+                                        ? "border border-solid"
+                                        : "border-2 border-dashed"
+                                    } ${
+                                      darkMode
+                                        ? "border-gray-600"
+                                        : "border-gray-300"
+                                    } overflow-hidden`}
+                                    style={{
+                                      left: `${left}%`,
+                                      top: `${top}%`,
+                                      width: `${photoWidth}%`,
+                                      height: `${photoHeight}%`,
+                                    }}
+                                  >
+                                    {image && (
+                                      <div
+                                        className="w-full h-full bg-contain bg-center bg-no-repeat"
+                                        style={{
+                                          backgroundImage: `url(${image.dataUrl})`,
+                                          backgroundSize: "cover",
+                                          opacity: 0.7,
+                                        }}
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              }
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={generatePDF}
+                disabled={images.length === 0}
+                className={`w-full flex justify-center items-center px-4 py-2 rounded-md shadow-sm text-sm font-medium transition-colors duration-200 ${
+                  images.length === 0
+                    ? "bg-gray-300 cursor-not-allowed"
+                    : darkMode
+                    ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                    : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+              >
+                <Download className="h-5 w-5 mr-2" />
+                Generate PDF
+              </button>
+            </div>
+          )}
+        </div>
+
         <button
           onClick={() => setDarkMode(!darkMode)}
           className={`fixed bottom-4 right-4 p-2 rounded-full ${
@@ -824,456 +1290,6 @@ function App() {
             <Moon className="h-5 w-5 text-gray-600" />
           )}
         </button>
-
-        <div
-          className={`${
-            darkMode ? "bg-gray-800" : "bg-white"
-          } shadow-lg rounded-lg p-6 mb-6 transition-colors duration-200`}
-        >
-          <div
-            {...getRootProps()}
-            className={`border-2 border-dashed ${
-              darkMode
-                ? "border-gray-600 hover:border-gray-500"
-                : "border-gray-300 hover:border-gray-400"
-            } rounded-lg p-6 text-center cursor-pointer transition-colors duration-200`}
-          >
-            <input {...getInputProps()} />
-            <ImagePlus
-              className={`mx-auto h-12 w-12 ${
-                darkMode ? "text-gray-500" : "text-gray-400"
-              }`}
-            />
-            <p
-              className={`mt-2 text-sm ${
-                darkMode ? "text-gray-300" : "text-gray-600"
-              }`}
-            >
-              {isDragActive
-                ? "Drop the photo here..."
-                : "Drag & drop a photo here, or click to select"}
-            </p>
-          </div>
-          {images.length > 0 && (
-            <div className="mt-4">
-              <ImageSelector />
-              {selectedImageId && (
-                <div className="relative" onWheel={handleWheelZoom}>
-                  <div
-                    className="overflow-hidden relative"
-                    style={{ height: "12rem" }}
-                    onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
-                  >
-                    <img
-                      ref={imageRef}
-                      src={
-                        images.find((img) => img.id === selectedImageId)
-                          ?.dataUrl
-                      }
-                      alt="Preview"
-                      className="max-h-none mx-auto object-contain transition-transform"
-                      style={{
-                        transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${previewZoom})`,
-                        transformOrigin: "center",
-                        cursor: isDraggingImage ? "grabbing" : "grab",
-                      }}
-                      draggable={false}
-                    />
-                    {cropArea && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div
-                          className="absolute border-2 border-indigo-500"
-                          style={{
-                            left: `${
-                              (cropArea.x / imageRef.current!.naturalWidth) *
-                              100
-                            }%`,
-                            top: `${
-                              (cropArea.y / imageRef.current!.naturalHeight) *
-                              100
-                            }%`,
-                            width: `${
-                              (cropArea.width /
-                                imageRef.current!.naturalWidth) *
-                              100
-                            }%`,
-                            height: `${
-                              (cropArea.height /
-                                imageRef.current!.naturalHeight) *
-                              100
-                            }%`,
-                            boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.5)",
-                            zIndex: 10,
-                            border: "2px dashed #6366f1",
-                          }}
-                        >
-                          <div className="absolute -top-4 -right-4 bg-indigo-500 rounded-full p-1">
-                            <Crop className="text-white" size={14} />
-                          </div>
-                          <div className="absolute inset-0 border-2 border-white border-dashed opacity-50" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="my-2 text-sm text-gray-500 text-center">
-                    Use mouse wheel to zoom in/out
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-6">
-                    <div>
-                      <label
-                        className={`block text-sm font-medium ${
-                          darkMode ? "text-gray-200" : "text-gray-700"
-                        }`}
-                      >
-                        Photo Size
-                      </label>
-                      <div className="mt-1 flex gap-2">
-                        <select
-                          className={`block w-full rounded-md shadow-sm focus:ring-indigo-500 ${
-                            darkMode
-                              ? "bg-gray-700 border-gray-600 text-white"
-                              : "bg-white border-gray-300 text-gray-900"
-                          } focus:border-indigo-500 transition-colors duration-200`}
-                          value={selectedPhotoSize.label}
-                          onChange={(e) =>
-                            setSelectedPhotoSize(
-                              photoSizes.find(
-                                (size) => size.label === e.target.value
-                              ) || photoSizes[0]
-                            )
-                          }
-                        >
-                          {photoSizes.map((size) => (
-                            <option key={size.label} value={size.label}>
-                              {size.label}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={() => setShowCustomPhotoForm(true)}
-                          className={`px-3 py-2 border rounded-md shadow-sm text-sm font-medium ${
-                            darkMode
-                              ? "border-gray-600 bg-gray-700 text-gray-200 hover:bg-gray-600"
-                              : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                          } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200`}
-                        >
-                          <Plus className="h-5 w-5" />
-                        </button>
-                      </div>
-                      {showCustomPhotoForm && (
-                        <div className="mt-2 p-4 border rounded-md">
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700">
-                                Width (mm)
-                              </label>
-                              <input
-                                type="number"
-                                value={customPhotoWidth}
-                                onChange={(e) =>
-                                  setCustomPhotoWidth(e.target.value)
-                                }
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700">
-                                Height (mm)
-                              </label>
-                              <input
-                                type="number"
-                                value={customPhotoHeight}
-                                onChange={(e) =>
-                                  setCustomPhotoHeight(e.target.value)
-                                }
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                              />
-                            </div>
-                          </div>
-                          <div className="mt-2 flex justify-end gap-2">
-                            <button
-                              onClick={() => setShowCustomPhotoForm(false)}
-                              className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={addCustomPhotoSize}
-                              className="px-2 py-1 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700"
-                            >
-                              Add
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <label
-                        className={`block text-sm font-medium ${
-                          darkMode ? "text-gray-200" : "text-gray-700"
-                        }`}
-                      >
-                        Paper Size
-                      </label>
-                      <div className="mt-1 flex gap-2">
-                        <select
-                          className={`block w-full rounded-md shadow-sm focus:ring-indigo-500 ${
-                            darkMode
-                              ? "bg-gray-700 border-gray-600 text-white"
-                              : "bg-white border-gray-300 text-gray-900"
-                          } focus:border-indigo-500 transition-colors duration-200`}
-                          value={selectedPaperSize.label}
-                          onChange={(e) =>
-                            setSelectedPaperSize(
-                              paperSizes.find(
-                                (size) => size.label === e.target.value
-                              ) || paperSizes[0]
-                            )
-                          }
-                        >
-                          {paperSizes.map((size) => (
-                            <option key={size.label} value={size.label}>
-                              {size.label}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={() => setShowCustomPaperForm(true)}
-                          className={`px-3 py-2 border rounded-md shadow-sm text-sm font-medium ${
-                            darkMode
-                              ? "border-gray-600 bg-gray-700 text-gray-200 hover:bg-gray-600"
-                              : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                          } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200`}
-                        >
-                          <Plus className="h-5 w-5" />
-                        </button>
-                      </div>
-                      {showCustomPaperForm && (
-                        <div className="mt-2 p-4 border rounded-md">
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700">
-                                Width (mm)
-                              </label>
-                              <input
-                                type="number"
-                                value={customPaperWidth}
-                                onChange={(e) =>
-                                  setCustomPaperWidth(e.target.value)
-                                }
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700">
-                                Height (mm)
-                              </label>
-                              <input
-                                type="number"
-                                value={customPaperHeight}
-                                onChange={(e) =>
-                                  setCustomPaperHeight(e.target.value)
-                                }
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                              />
-                            </div>
-                          </div>
-                          <div className="mt-2 flex justify-end gap-2">
-                            <button
-                              onClick={() => setShowCustomPaperForm(false)}
-                              className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={addCustomPaperSize}
-                              className="px-2 py-1 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700"
-                            >
-                              Add
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        {selectedImageId && (
-          <>
-            <div
-              className={`${
-                darkMode ? "bg-gray-800" : "bg-white"
-              } shadow-lg rounded-lg p-6 mb-6 transition-colors duration-200`}
-            >
-              <LayoutTypeSelector />
-              {layoutType === "photobooth" && <PhotoboothTemplateSelector />}
-              <div className="mt-6">
-                {/* Preview Card */}
-                <div
-                  className={`p-4 rounded-md ${
-                    darkMode ? "bg-gray-700" : "bg-gray-50"
-                  } transition-colors duration-200`}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center">
-                      <Printer
-                        className={`h-5 w-5 mr-2 ${
-                          darkMode ? "text-gray-400" : "text-gray-500"
-                        }`}
-                      />
-                      <span
-                        className={`text-sm ${
-                          darkMode ? "text-gray-300" : "text-gray-600"
-                        }`}
-                      >
-                        Layout Preview:
-                      </span>
-                    </div>
-                    <button
-                      onClick={() =>
-                        setPreviewBackground((prev) =>
-                          prev === "white" ? "black" : "white"
-                        )
-                      }
-                      className={`px-3 py-1 rounded-md text-sm ${
-                        darkMode
-                          ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
-                          : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-                      }`}
-                    >
-                      Background:{" "}
-                      {previewBackground === "white" ? "White" : "Black"}
-                    </button>
-                  </div>
-
-                  <div className="mt-4 bg-white border rounded-lg overflow-hidden">
-                    <div
-                      className="relative bg-gray-100"
-                      style={{
-                        width: "100%",
-                        paddingTop: `${
-                          (selectedPaperSize.height / selectedPaperSize.width) *
-                          100
-                        }%`,
-                      }}
-                    >
-                      {/* Paper preview container */}
-                      <div
-                        className={`absolute inset-0 m-4 ${
-                          previewBackground === "black"
-                            ? "bg-black"
-                            : "bg-white"
-                        } shadow-inner`}
-                      >
-                        {/* Generate preview boxes for each photo position */}
-                        {Array.from({ length: layout.rows }).map((_, row) =>
-                          Array.from({ length: layout.photosPerRow }).map(
-                            (_, col) => {
-                              const imageIndex =
-                                row * layout.photosPerRow + col;
-                              const image = images[imageIndex % images.length];
-
-                              const padding = layout.padding;
-                              const totalWidth = selectedPaperSize.width;
-                              const totalHeight = selectedPaperSize.height;
-
-                              const photoWidth =
-                                (selectedPhotoSize.width / totalWidth) * 100;
-                              const photoHeight =
-                                (selectedPhotoSize.height / totalHeight) * 100;
-                              const spacingX = (padding / totalWidth) * 100;
-                              const spacingY = (padding / totalHeight) * 100;
-
-                              const totalWidthWithPadding =
-                                layout.photosPerRow * photoWidth +
-                                (layout.photosPerRow - 1) * spacingX;
-                              const totalHeightWithPadding =
-                                layout.rows * photoHeight +
-                                (layout.rows - 1) * spacingY;
-
-                              const marginX =
-                                ((totalWidth -
-                                  (totalWidthWithPadding * totalWidth) / 100) /
-                                  2 /
-                                  totalWidth) *
-                                100;
-                              const marginY =
-                                ((totalHeight -
-                                  (totalHeightWithPadding * totalHeight) /
-                                    100) /
-                                  2 /
-                                  totalHeight) *
-                                100;
-
-                              const left =
-                                marginX + col * (photoWidth + spacingX);
-                              const top =
-                                marginY + row * (photoHeight + spacingY);
-
-                              return (
-                                <div
-                                  key={`${row}-${col}`}
-                                  className={`absolute ${
-                                    layoutType === "photobooth"
-                                      ? "border border-solid"
-                                      : "border-2 border-dashed"
-                                  } ${
-                                    darkMode
-                                      ? "border-gray-600"
-                                      : "border-gray-300"
-                                  } overflow-hidden`}
-                                  style={{
-                                    left: `${left}%`,
-                                    top: `${top}%`,
-                                    width: `${photoWidth}%`,
-                                    height: `${photoHeight}%`,
-                                  }}
-                                >
-                                  {image && (
-                                    <div
-                                      className="w-full h-full bg-contain bg-center bg-no-repeat"
-                                      style={{
-                                        backgroundImage: `url(${image.dataUrl})`,
-                                        backgroundSize: "cover",
-                                        opacity: 0.7,
-                                      }}
-                                    />
-                                  )}
-                                </div>
-                              );
-                            }
-                          )
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={generatePDF}
-              disabled={images.length === 0}
-              className={`w-full flex justify-center items-center px-4 py-2 rounded-md shadow-sm text-sm font-medium transition-colors duration-200 ${
-                images.length === 0
-                  ? "bg-gray-300 cursor-not-allowed"
-                  : darkMode
-                  ? "bg-indigo-600 hover:bg-indigo-700 text-white"
-                  : "bg-indigo-600 hover:bg-indigo-700 text-white"
-              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
-            >
-              <Download className="h-5 w-5 mr-2" />
-              Generate PDF
-            </button>
-          </>
-        )}
       </div>
     </div>
   );
