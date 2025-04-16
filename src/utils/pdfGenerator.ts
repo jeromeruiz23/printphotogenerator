@@ -22,147 +22,138 @@ export const generatePDF = async (
     format: [selectedPaperSize.width, selectedPaperSize.height],
   });
 
-  // Set background color for the whole page
-  if (previewBackground === "black") {
-    doc.setFillColor(0, 0, 0);
-    doc.rect(0, 0, selectedPaperSize.width, selectedPaperSize.height, "F");
-  }
+  // Calculate total photos per page
+  const photosPerPage = layout.photosPerRow * layout.rows;
+  // Calculate total pages needed
+  const totalPages = Math.ceil(images.length / photosPerPage);
 
-  // Calculate centering margins for the page
-  const totalWidthWithPadding =
-    layout.photosPerRow * selectedPhotoSize.width +
-    (layout.photosPerRow - 1) * padding;
-  const totalHeightWithPadding =
-    layout.rows * selectedPhotoSize.height + (layout.rows - 1) * padding;
-  const printableWidth = selectedPaperSize.width - 2 * paperMargin;
-  const printableHeight = selectedPaperSize.height - 2 * paperMargin;
-  const marginX = paperMargin + (printableWidth - totalWidthWithPadding) / 2;
-  const marginY = paperMargin + (printableHeight - totalHeightWithPadding) / 2;
+  const getImage = (imageIndex: number) => {
+    const availableImages = images.length;
 
-  // Helper function to get the correct image for photobooth layouts
-  const getPhotoboothImage = (row: number, col: number) => {
-    const imageIndex = row * layout.photosPerRow + col;
-    if (layout.type !== "photobooth") return images[imageIndex % images.length];
-
-    switch (layout.template) {
-      case "classic":
-        // Use first 4 images, or repeat the first one if fewer images
-        return images[Math.min(imageIndex, images.length - 1)];
-      case "strips":
-        // Use first 4 images vertically, or repeat the first one
-        return images[Math.min(imageIndex, images.length - 1)];
-      case "collage":
-        // Use first 6 images, or repeat in sequence if fewer images
-        return images[imageIndex % images.length];
-      default:
-        return images[0];
+    // If we have enough images, use them in sequence
+    if (imageIndex < availableImages) {
+      return images[imageIndex];
     }
+
+    // If we need to repeat, use a different sequence to avoid adjacent duplicates
+    const offset = Math.floor(imageIndex / availableImages) % availableImages;
+    return images[(imageIndex + offset) % availableImages];
   };
 
-  // Process photos for the page
-  for (let row = 0; row < layout.rows; row++) {
-    for (let col = 0; col < layout.photosPerRow; col++) {
-      const currentImage = getPhotoboothImage(row, col);
-      if (!currentImage) continue;
+  for (let page = 0; page < totalPages; page++) {
+    if (page > 0) {
+      doc.addPage([selectedPaperSize.width, selectedPaperSize.height]);
+    }
 
-      const x = marginX + col * (selectedPhotoSize.width + padding);
-      const y = marginY + row * (selectedPhotoSize.height + padding);
+    // Set background color for the current page
+    if (previewBackground === "black") {
+      doc.setFillColor(0, 0, 0);
+      doc.rect(0, 0, selectedPaperSize.width, selectedPaperSize.height, "F");
+    }
 
-      // Create temporary canvas for the current image
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      if (!ctx) continue;
+    // Calculate centering margins for the page
+    const totalWidthWithPadding =
+      layout.photosPerRow * selectedPhotoSize.width +
+      (layout.photosPerRow - 1) * padding;
+    const totalHeightWithPadding =
+      layout.rows * selectedPhotoSize.height + (layout.rows - 1) * padding;
+    const printableWidth = selectedPaperSize.width - 2 * paperMargin;
+    const printableHeight = selectedPaperSize.height - 2 * paperMargin;
+    const marginX = paperMargin + (printableWidth - totalWidthWithPadding) / 2;
+    const marginY =
+      paperMargin + (printableHeight - totalHeightWithPadding) / 2;
 
-      // Set canvas size to match the target photo size
-      const scale = 10; // Scale up for better quality
-      canvas.width = selectedPhotoSize.width * scale;
-      canvas.height = selectedPhotoSize.height * scale;
+    // Process photos for the current page
+    for (let row = 0; row < layout.rows; row++) {
+      for (let col = 0; col < layout.photosPerRow; col++) {
+        const imageIndex =
+          page * photosPerPage + row * layout.photosPerRow + col;
 
-      // Create temporary image element
-      const img = new Image();
-      await new Promise((resolve) => {
-        img.onload = resolve;
-        img.src = currentImage.dataUrl;
-      });
+        const currentImage = getImage(imageIndex);
+        if (!currentImage) continue;
 
-      // Calculate crop area and position adjustments for this image
-      const originalRect = img.width / img.height;
-      const targetAspectRatio =
-        selectedPhotoSize.width / selectedPhotoSize.height;
-      let cropArea;
+        const x = marginX + col * (selectedPhotoSize.width + padding);
+        const y = marginY + row * (selectedPhotoSize.height + padding);
 
-      if (originalRect > targetAspectRatio) {
-        const cropWidth = img.height * targetAspectRatio;
-        cropArea = {
-          x: (img.width - cropWidth) / 2,
-          y: 0,
-          width: cropWidth,
-          height: img.height,
-        };
-      } else {
-        const cropHeight = img.width / targetAspectRatio;
-        cropArea = {
-          x: 0,
-          y: (img.height - cropHeight) / 2,
-          width: img.width,
-          height: cropHeight,
-        };
-      }
+        // Create temporary canvas for the current image
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) continue;
 
-      // Apply zoom and position adjustments
-      ctx.save();
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.scale(currentImage.zoom, currentImage.zoom);
-      ctx.translate(-canvas.width / 2, -canvas.height / 2);
+        // Set canvas size to match the target photo size
+        const scale = 10; // Scale up for better quality
+        canvas.width = selectedPhotoSize.width * scale;
+        canvas.height = selectedPhotoSize.height * scale;
 
-      // Draw and crop image
-      ctx.drawImage(
-        img,
-        cropArea.x - (currentImage.position.x * cropArea.width) / canvas.width,
-        cropArea.y -
-          (currentImage.position.y * cropArea.height) / canvas.height,
-        cropArea.width,
-        cropArea.height,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
-      ctx.restore();
+        // Create temporary image element
+        const img = new Image();
+        await new Promise((resolve) => {
+          img.onload = resolve;
+          img.src = currentImage.dataUrl;
+        });
 
-      // Add image to PDF
-      const imageData = canvas.toDataURL("image/jpeg", 1.0);
-      doc.addImage(
-        imageData,
-        "JPEG",
-        x,
-        y,
-        selectedPhotoSize.width,
-        selectedPhotoSize.height,
-        undefined,
-        "FAST"
-      );
+        // Calculate crop area and position adjustments for this image
+        const originalRect = img.width / img.height;
+        const targetAspectRatio =
+          selectedPhotoSize.width / selectedPhotoSize.height;
+        let cropArea;
 
-      // Set border color based on background
-      doc.setDrawColor(previewBackground === "black" ? 255 : 0);
+        if (originalRect > targetAspectRatio) {
+          const cropWidth = img.height * targetAspectRatio;
+          cropArea = {
+            x: (img.width - cropWidth) / 2,
+            y: 0,
+            width: cropWidth,
+            height: img.height,
+          };
+        } else {
+          const cropHeight = img.width / targetAspectRatio;
+          cropArea = {
+            x: 0,
+            y: (img.height - cropHeight) / 2,
+            width: img.width,
+            height: cropHeight,
+          };
+        }
 
-      if (layout.type === "photobooth") {
-        // Draw solid borders for photobooth layout
-        doc.line(x, y, x + selectedPhotoSize.width, y); // top
-        doc.line(
+        // Apply zoom and position adjustments
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.scale(currentImage.zoom, currentImage.zoom);
+        ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
+        // Draw and crop image
+        ctx.drawImage(
+          img,
+          cropArea.x -
+            (currentImage.position.x * cropArea.width) / canvas.width,
+          cropArea.y -
+            (currentImage.position.y * cropArea.height) / canvas.height,
+          cropArea.width,
+          cropArea.height,
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+        ctx.restore();
+
+        // Add image to PDF
+        const imageData = canvas.toDataURL("image/jpeg", 1.0);
+        doc.addImage(
+          imageData,
+          "JPEG",
           x,
-          y + selectedPhotoSize.height,
-          x + selectedPhotoSize.width,
-          y + selectedPhotoSize.height
-        ); // bottom
-        doc.line(x, y, x, y + selectedPhotoSize.height); // left
-        doc.line(
-          x + selectedPhotoSize.width,
           y,
-          x + selectedPhotoSize.width,
-          y + selectedPhotoSize.height
-        ); // right
-      } else {
+          selectedPhotoSize.width,
+          selectedPhotoSize.height,
+          undefined,
+          "FAST"
+        );
+
+        // Set border color based on background
+        doc.setDrawColor(previewBackground === "black" ? 255 : 0);
+
         // Draw dashed borders for grid layout
         const dashLength = 2;
         const gapLength = 2;
@@ -208,7 +199,5 @@ export const generatePDF = async (
     }
   }
 
-  doc.save(
-    layout.type === "photobooth" ? "photobooth.pdf" : "photo-layout.pdf"
-  );
+  doc.save("photo-layout.pdf");
 };

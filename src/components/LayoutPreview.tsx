@@ -1,5 +1,5 @@
-import React from "react";
-import { Printer } from "lucide-react";
+import React, { useState } from "react";
+import { Printer, ChevronLeft, ChevronRight } from "lucide-react";
 import { Layout, ImageData, PhotoSize, PaperSize } from "../types";
 import { generatePDF } from "../utils/pdfGenerator";
 import { Tooltip } from "./Tooltip";
@@ -14,6 +14,10 @@ interface LayoutPreviewProps {
   darkMode: boolean;
 }
 
+const getImagesPerPage = (layout: Layout) => {
+  return layout.rows * layout.photosPerRow;
+};
+
 export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
   images,
   layout,
@@ -23,6 +27,19 @@ export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
   onBackgroundChange,
   darkMode,
 }) => {
+  const [currentPage, setCurrentPage] = useState(0);
+  const imagesPerPage = getImagesPerPage(layout);
+  const totalPages = Math.ceil(images.length / imagesPerPage);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  const getPageImages = (page: number) => {
+    const startIndex = page * imagesPerPage;
+    const endIndex = startIndex + imagesPerPage;
+    return images.slice(startIndex, endIndex);
+  };
   const handleGeneratePDF = () => {
     generatePDF(
       images,
@@ -33,24 +50,9 @@ export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
     );
   };
 
-  const getPhotoboothImage = (row: number, col: number) => {
-    const imageIndex = row * layout.photosPerRow + col;
-    if (layout.type !== "photobooth") return images[imageIndex % images.length];
-
-    // For photobooth templates, use different image selection logic
-    switch (layout.template) {
-      case "classic":
-        // Use first 4 images, or repeat the first one if fewer images
-        return images[Math.min(imageIndex, images.length - 1)];
-      case "strips":
-        // Use first 4 images vertically, or repeat the first one
-        return images[Math.min(imageIndex, images.length - 1)];
-      case "collage":
-        // Use first 6 images, or repeat in sequence if fewer images
-        return images[imageIndex % images.length];
-      default:
-        return images[0];
-    }
+  const getImageForPosition = (imageIndex: number) => {
+    const pageImages = getPageImages(currentPage);
+    return pageImages[imageIndex] || null;
   };
 
   return (
@@ -113,7 +115,8 @@ export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
               >
                 {Array.from({ length: layout.rows }).map((_, row) =>
                   Array.from({ length: layout.photosPerRow }).map((_, col) => {
-                    const image = getPhotoboothImage(row, col);
+                    const imageIndex = row * layout.photosPerRow + col;
+                    const image = getImageForPosition(imageIndex);
                     if (!image) return null;
 
                     const padding = layout.padding;
@@ -152,11 +155,7 @@ export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
                     return (
                       <div
                         key={`${row}-${col}`}
-                        className={`absolute transition-opacity duration-200 ${
-                          layout.type === "photobooth"
-                            ? "border border-solid"
-                            : "border-2 border-dashed"
-                        } ${
+                        className={`absolute border-2 border-dashed ${
                           darkMode ? "border-gray-700" : "border-gray-300"
                         } overflow-hidden hover:opacity-90`}
                         style={{
@@ -203,6 +202,48 @@ export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
           Generate PDF
         </button>
       </Tooltip>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center mt-6 space-x-4">
+          <button
+            onClick={() => handlePageChange(Math.max(currentPage - 1, 0))}
+            disabled={currentPage === 0}
+            className={`p-2 rounded-full ${
+              darkMode
+                ? "text-gray-300 hover:bg-gray-700"
+                : "text-gray-600 hover:bg-gray-200"
+            } transition-colors duration-200 ${
+              currentPage === 0 ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <span
+            className={`text-sm font-medium ${
+              darkMode ? "text-gray-300" : "text-gray-600"
+            }`}
+          >
+            Page {currentPage + 1} of {totalPages}
+          </span>
+          <button
+            onClick={() =>
+              handlePageChange(Math.min(currentPage + 1, totalPages - 1))
+            }
+            disabled={currentPage === totalPages - 1}
+            className={`p-2 rounded-full ${
+              darkMode
+                ? "text-gray-300 hover:bg-gray-700"
+                : "text-gray-600 hover:bg-gray-200"
+            } transition-colors duration-200 ${
+              currentPage === totalPages - 1
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+            }`}
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,15 +1,10 @@
 import { useState } from "react";
-import { LayoutType, PhotoboothTemplate } from "../types";
+import { LayoutType } from "../types";
 
 export const useLayout = () => {
-  const [layoutType, setLayoutType] = useState<LayoutType>("grid");
-  const [photoboothTemplate, setPhotoboothTemplate] =
-    useState<PhotoboothTemplate>("classic");
+  const [layoutType] = useState<LayoutType>("grid");
 
   return {
     layoutType,
-    setLayoutType,
-    photoboothTemplate,
-    setPhotoboothTemplate,
   };
 };

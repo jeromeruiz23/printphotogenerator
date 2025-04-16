@@ -1,6 +1,4 @@
-export type LayoutType = "grid" | "photobooth";
-
-export type PhotoboothTemplate = "classic" | "strips" | "collage";
+export type LayoutType = "grid";
 
 export interface PhotoSize {
   width: number;
@@ -16,12 +14,17 @@ export interface PaperSize {
   isCustom?: boolean;
 }
 
+export interface LayoutOptions {
+  customPadding?: number;
+  customPhotosPerRow?: number;
+  customRows?: number;
+}
+
 export interface Layout {
   photosPerRow: number;
   rows: number;
   total: number;
   type: LayoutType;
-  template?: PhotoboothTemplate;
   padding: number;
 }
 
@@ -39,4 +42,9 @@ export type ImageData = {
   position: { x: number; y: number };
   zoom: number;
   aspectRatio?: number;
+  size?: PhotoSize;
+  customSize?: {
+    width: number;
+    height: number;
+  };
 };

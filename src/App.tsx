@@ -4,16 +4,14 @@ import {
   ImageUploader,
   ImageSelector,
   ImagePreview,
-  LayoutTypeSelector,
-  PhotoboothTemplateSelector,
   SizeSelector,
   LayoutPreview,
+  LayoutCustomizer,
   Tooltip,
 } from "./components";
 import {
   useImages,
   useSizes,
-  useLayout,
   useDarkMode,
   useKeyboardShortcuts,
 } from "./hooks";
@@ -45,27 +43,20 @@ function App() {
     deleteCustomPhotoSize,
     deleteCustomPaperSize,
   } = useSizes();
-  const {
-    layoutType,
-    setLayoutType,
-    photoboothTemplate,
-    setPhotoboothTemplate,
-  } = useLayout();
   const [previewBackground, setPreviewBackground] = useState<"white" | "black">(
     "white"
   );
+  const [layoutOptions, setLayoutOptions] = useState({});
 
   const layout = calculateLayout(
-    layoutType,
     selectedPhotoSize,
     selectedPaperSize,
-    photoboothTemplate
+    layoutOptions
   );
   const selectedImage = images.find(
     (img: ImageData) => img.id === selectedImageId
   );
 
-  // Add keyboard shortcuts
   useKeyboardShortcuts([
     {
       key: "o",
@@ -209,19 +200,11 @@ function App() {
                             darkMode={darkMode}
                           />
 
-                          <LayoutTypeSelector
-                            layoutType={layoutType}
-                            onLayoutChange={setLayoutType}
+                          <LayoutCustomizer
+                            options={layoutOptions}
+                            onChange={setLayoutOptions}
                             darkMode={darkMode}
                           />
-
-                          {layoutType === "photobooth" && (
-                            <PhotoboothTemplateSelector
-                              template={photoboothTemplate}
-                              onTemplateChange={setPhotoboothTemplate}
-                              darkMode={darkMode}
-                            />
-                          )}
                         </div>
                       </>
                     )}
